@@ -76,7 +76,7 @@ semExp (ExpNode op e1 e2) env mem = o v1 v2
           v2 = semExp e2 env mem
           o = semBop op
 
-semDec :: Statement -> Env -> Mem -> (Env, Mem)
+semDec :: Dec -> Env -> Mem -> (Env, Mem)
 semDec (Init id exp) env mem = (env', mem')
     where 
           val = semExp exp env mem
@@ -89,9 +89,39 @@ semDec (Dec id) env mem = (env', mem')
           mem' = addStack mem loc (Value Unknown)
           loc = getLoc mem
 
+semDecL :: Statement -> Env -> Mem -> (Env, Mem)
+semDecL (DecList (x:xs)) env mem = (env'', mem'')
+    where (env', mem') = semDec x env mem
+          (env'', mem'') = semDecL (DecList xs) env' mem'
+
+interpretDec :: Dec -> Env -> Mem -> IO (Env, Mem)
+interpretDec (Dec x) env mem =
+    do
+        print $ "[" ++ x ++ " = " ++ show val ++ "]"
+        return (env', mem')
+    where (env', mem') = semDec (Dec x) env mem
+          Value val = searchStack mem' loc
+          Value loc = searchStack env' x
+
+interpretDec (Init x exp) env mem =
+    do
+        print $ "[" ++ x ++ " = " ++ show val ++ "]"
+        return (env', mem')
+    where (env', mem') = semDec (Init x exp) env mem
+          Value val = searchStack mem' loc
+          Value loc = searchStack env' x
+
+interpret :: Statement -> Env -> Mem -> IO ()
+interpret (Exp exp) env mem = print $ semExp exp env mem
+
+interpret (DecList (x:xs)) env mem = do
+    (env', mem') <- interpretDec x env mem
+    interpret (DecList xs) env' mem'
+
+interpret (DecList []) _ _ = return ()
 
 main :: IO ()                                                                   
 main = do
     exps <- lines <$> getContents
     let exps' =  map (parse . tokenize) exps
-    mapM_ (print . (\ (Exp x) -> semExp x [w] [w])) exps'
+    mapM_ (\x -> interpret x [w] [w]) exps'

@@ -12,6 +12,7 @@ data Token =
            Ide Ide |
            Num Int |
            Equals | 
+           SemiColon | 
            Int |
            EOF |
            Other
@@ -57,6 +58,7 @@ nextToken (x:xs)
     | isSpace x = nextToken xs
     | isBinOp x = (BinOp (mapOperator x), xs)
     | x == '=' = (Equals, xs)
+    | x == ';' = (SemiColon, xs)
     | isAlpha x || isUnderscore x = scanIde xs [x]
     | isDigit x = scanNum xs (digitToInt x)
     | otherwise = error $ "Lexical error on character '" ++ [x] ++ "'"

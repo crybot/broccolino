@@ -94,6 +94,17 @@ semDecL (DecList (x:xs)) env mem = (env'', mem'')
     where (env', mem') = semDec x env mem
           (env'', mem'') = semDecL (DecList xs) env' mem'
 
+semCom :: Com -> Env -> Mem -> Mem
+semCom (Com id exp) env mem = mem'
+    where mem' = updateStack mem loc (Value val)
+          Value loc = searchStack env id
+          val = semExp exp env mem
+
+semComL :: Statement -> Env -> Mem -> Mem
+semComL (ComList (x:xs)) env mem = mem''
+    where mem' = semCom x env mem
+          mem'' = semComL (ComList xs) env mem'
+
 interpretDec :: Dec -> Env -> Mem -> IO (Env, Mem)
 interpretDec (Dec x) env mem =
     do
@@ -111,17 +122,39 @@ interpretDec (Init x exp) env mem =
           Value val = searchStack mem' loc
           Value loc = searchStack env' x
 
-interpret :: Statement -> Env -> Mem -> IO ()
-interpret (Exp exp) env mem = print $ semExp exp env mem
 
+interpretCom :: Com -> Env -> Mem -> IO Mem
+interpretCom (Com id exp) env mem = do
+    print $ "[" ++ id ++ " = " ++ show val ++ "]"
+    return mem'
+    where
+        mem' = semCom (Com id exp) env mem
+        Value val = searchStack mem' loc
+        Value loc = searchStack env id
+
+
+interpret :: Statement -> Env -> Mem -> IO (Env, Mem)
+interpret (Exp exp) env mem = do
+    print $ semExp exp env mem
+    return (env, mem)
+
+
+interpret (DecList []) env mem  = return (env, mem)
 interpret (DecList (x:xs)) env mem = do
     (env', mem') <- interpretDec x env mem
     interpret (DecList xs) env' mem'
 
-interpret (DecList []) _ _ = return ()
+interpret (ComList []) env mem  = return (env, mem)
+interpret (ComList (x:xs)) env mem = do
+    mem' <- interpretCom x env mem
+    interpret (ComList xs) env mem'
 
 main :: IO ()                                                                   
 main = do
     exps <- lines <$> getContents
     let exps' =  map (parse . tokenize) exps
-    mapM_ (\x -> interpret x [w] [w]) exps'
+    let acc = return ([w], [w])
+    foldl (\acc x -> do 
+          (env, mem) <- acc
+          interpret x env mem) acc exps'
+    return ()

@@ -12,6 +12,7 @@ data Token =
            Ide Ide |
            Num Int |
            Equals | 
+           And |
            SemiColon | 
            Int |
            EOF |
@@ -21,11 +22,12 @@ data Token =
 data Operation = Plus | Minus | Times | Divide 
                deriving (Show, Eq)
 
-reservedWords = ["int"] :: [String]
+reservedWords = ["int", "and"] :: [String]
 
 mapReserved :: String -> Token
 mapReserved w = case w of
                      "int" -> Int
+                     "and" -> And
 
 mapOperator :: Char -> Operation
 mapOperator '+' = Plus

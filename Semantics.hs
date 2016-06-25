@@ -64,9 +64,9 @@ semBop o = f
 semExp :: ExpAst -> Env -> Mem -> Val
 semExp (ValNode n) env mem = ValN n
 
---semExp (Ide id) env mem = v
-    --where Value loc = searchStack env id
-          --Value v = searchStack mem loc
+semExp (IdeNode id) env mem = v
+    where Value loc = searchStack env id
+          Value v = searchStack mem loc
 
 semExp (ExpNode op e1 e2) env mem = o v1 v2
     where v1 = semExp e1 env mem

@@ -4,14 +4,14 @@ import Lexer
 data Statement = Exp ExpAst | DecList [Dec] | ComList [Com] deriving (Show, Eq)
 data Dec = Dec Ide | Init Ide ExpAst deriving (Show, Eq)
 data Com = Com Ide ExpAst deriving (Show, Eq)
-data ExpAst = ExpNode Operation ExpAst ExpAst | ValNode Int | Empty deriving (Show,Eq)
+data ExpAst = ExpNode Operation ExpAst ExpAst | ValNode Int | IdeNode Ide | Empty deriving (Show,Eq)
 
 -- GRAMMAR --
 -- post-fix F stands for "left Factored"
 -- post-fix ' stands for productions from which left recursion has been
 -- eliminated
 {-
-- S -> DecL | ComL | Exp
+- S -> DecL | ComL | Expr
 - DecL -> Dec DecLF
 - DecLF -> and DecL | epsilon
 - ComL -> Com ComLF
@@ -33,6 +33,12 @@ parse :: [Token] -> Statement
 parse all@(Int:tokens) = check rest ast
     where (ast, rest) = parseDecL all
 
+parse all@[Ide x] = check rest (Exp ast)
+    where (ast, rest) = parseExpr all
+
+parse all@(Ide x : BinOp _ : tokens) = check rest (Exp ast)
+    where (ast, rest) = parseExpr all
+          
 parse all@(Ide x : tokens) = check rest ast
     where (ast, rest) = parseComL all
 
@@ -121,6 +127,7 @@ parseFactor (LParen : tokens) = case tokens' of
     where (ast, tokens') = parseExpr tokens
 
 parseFactor (Num a : tokens) = (ValNode a, tokens)
+parseFactor (Ide x : tokens) = (IdeNode x, tokens)
 parseFactor _ = error "parsing error on Factor"
 
 

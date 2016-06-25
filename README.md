@@ -16,7 +16,7 @@ post-fix ' stands for productions from which left recursion has been eliminated
 - ComL -> Com ComLF
 - ComLF -> ; ComL | epsilon
 - Dec -> int ide | int ide = Expr
-- Com -> ide = Expr
+- Com -> ide = Expr | if Expr then ComL else ComL
 - Expr -> TermExpr'
 - Expr' -> +TermExpr' | -TermExpr' | epsilon
 - Term -> FactTerm'

@@ -1,7 +1,8 @@
 <strong> Current Grammar </strong>
-<i> post-fix F stands for "left Factored" </i>
-<i> post-fix ' stands for productions from which left recursion has been 
--- eliminated </i>
+<p> <i>
+    post-fix F stands for "left Factored" 
+    post-fix ' stands for productions from which left recursion has been -- eliminated 
+</i> </p> 
 
 - S -> DecL | ComL | Expr
 - DecL -> Dec DecLF

@@ -1,6 +1,7 @@
 module Main where
 import Lexer
 import Parser
+import Control.Monad
 
 data Bottom a = Bottom | Value a deriving (Show, Eq)                                                                                                     
 type Frame a b = a -> Bottom b                                                  
@@ -18,18 +19,14 @@ w :: a -> Bottom b
 w _ = Bottom                                                                    
 
 add :: (Eq a, Eq b) => Frame a b  -> a -> Bottom b -> Frame a b                 
-add f x y                                                                       
-    | f x == Bottom = g                                                       
-    | otherwise = undefined                                                     
-    where g z | z == x = y                                                      
-              | otherwise = f z                                                 
+add f x y z | f x /= Bottom = undefined
+            | x == z = y
+            | otherwise = f z 
 
 update :: (Eq a, Eq b) => Frame a b  -> a -> Bottom b -> Frame a b              
-update f x y                                                                    
-    | f x /= Bottom = g                                                         
-    | otherwise = undefined                                                     
-    where g z | z == x = y                                                      
-              | otherwise = f z                                                 
+update f x y z | f x == Bottom = undefined
+               | z == x = y               
+               | otherwise = f z
 
 searchStack :: (Eq a, Eq b) => [Frame a b] -> a -> Bottom b                    
 searchStack [] _ = Bottom                                                      
@@ -153,8 +150,5 @@ main :: IO ()
 main = do
     exps <- lines <$> getContents
     let exps' =  map (parse . tokenize) exps
-    let acc = return ([w], [w])
-    foldl (\acc x -> do 
-          (env, mem) <- acc
-          interpret x env mem) acc exps'
+    foldM_ (\(env,mem) x -> interpret x env mem) ([w],[w]) exps'
     return ()

@@ -54,11 +54,11 @@ tokenize s = tok : tokenize consumed
 
 nextToken :: String -> (Token, String)
 nextToken [] = (EOF, []) -- Should not ever verify -- 
-nextToken ('(':xs) = (LParen, xs)
-nextToken (')':xs) = (RParen, xs)
 nextToken (x:xs) 
     | isSpace x = nextToken xs
     | isBinOp x = (BinOp (mapOperator x), xs)
+    | x == '(' = (LParen, xs)
+    | x == ')' = (RParen, xs)
     | x == '=' = (Equals, xs)
     | x == ';' = (SemiColon, xs)
     | isAlpha x || isUnderscore x = scanIde xs [x]

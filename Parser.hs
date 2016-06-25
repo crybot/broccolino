@@ -26,9 +26,8 @@ data ExpAst = ExpNode Operation ExpAst ExpAst | ValNode Int | Empty deriving (Sh
 -}
          
 check :: [Token] -> a -> a
-check tokens result = if null tokens 
-                         then result 
-                         else error $ "parsing error: Unexpected token '" ++ show (head tokens) ++ "'"
+check [] result = result
+check (x:_) _ = error $ "parsing error: Unexpected token '" ++ show x ++ "'"
 
 parse :: [Token] -> Statement
 parse all@(Int:tokens) = check rest ast

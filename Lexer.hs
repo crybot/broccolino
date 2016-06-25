@@ -14,6 +14,9 @@ data Token =
            Equals | 
            And |
            SemiColon | 
+           If |
+           Then |
+           Else |
            Int |
            EOF |
            Other
@@ -22,12 +25,15 @@ data Token =
 data Operation = Plus | Minus | Times | Divide 
                deriving (Show, Eq)
 
-reservedWords = ["int", "and"] :: [String]
+reservedWords = ["int", "and", "if", "then", "else"] :: [String]
 
 mapReserved :: String -> Token
 mapReserved w = case w of
                      "int" -> Int
                      "and" -> And
+                     "if" -> If
+                     "then" -> Then
+                     "else" -> Else
 
 mapOperator :: Char -> Operation
 mapOperator '+' = Plus
@@ -66,7 +72,8 @@ nextToken (x:xs)
     | otherwise = error $ "Lexical error on character '" ++ [x] ++ "'"
 
 scanIde :: String -> String -> (Token, String)
-scanIde [] lexem = (Ide lexem, [])
+scanIde [] lexem | isReserved lexem = (mapReserved lexem, []) 
+                 | otherwise = (Ide lexem, [])
 scanIde all@(x:xs) lexem 
     | isAlphaNum x || isUnderscore x = scanIde xs (lexem ++ [x]) -- Might be x : lexem and then reverse lexem
     | isReserved lexem = (mapReserved lexem, all)

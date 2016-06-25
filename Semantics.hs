@@ -59,8 +59,6 @@ semBop o = f
                    Times -> (*)
                    Divide -> div
 
-
-
 semExp :: ExpAst -> Env -> Mem -> Val
 semExp (ValNode n) env mem = ValN n
 
@@ -97,6 +95,11 @@ semCom (Com id exp) env mem = mem'
           Value loc = searchStack env id
           val = semExp exp env mem
 
+semCom (IfCom exp com1 com2) env mem 
+    | condition /= 0 = semComL (ComList com1) env mem
+    | otherwise = semComL (ComList com2) env mem
+    where ValN condition = semExp exp env mem
+
 semComL :: Statement -> Env -> Mem -> Mem
 semComL (ComList (x:xs)) env mem = mem''
     where mem' = semCom x env mem
@@ -128,6 +131,15 @@ interpretCom (Com id exp) env mem = do
         mem' = semCom (Com id exp) env mem
         Value val = searchStack mem' loc
         Value loc = searchStack env id
+
+interpretCom (IfCom exp com1 com2) env mem 
+    | condition /= 0 = do
+        (_, mem') <- interpret (ComList com1) env mem
+        return mem'
+    | otherwise = do
+        (_, mem') <- interpret (ComList com2) env mem
+        return mem'
+    where ValN condition = semExp exp env mem
 
 
 interpret :: Statement -> Env -> Mem -> IO (Env, Mem)

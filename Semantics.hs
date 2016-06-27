@@ -2,6 +2,7 @@ module Main where
 import Lexer
 import Parser
 import Control.Monad
+import Data.List.Split
 
 data Bottom a = Bottom | Value a deriving (Show, Eq)                                                                                                     
 type Frame a b = a -> Bottom b                                                  
@@ -160,7 +161,7 @@ interpret (ComList (x:xs)) env mem = do
 
 main :: IO ()                                                                   
 main = do
-    exps <- lines <$> getContents
+    exps <- init <$> splitOn "!" <$> getContents
     let exps' =  map (parse . tokenize) exps
     foldM_ (\(env,mem) x -> interpret x env mem) ([w],[w]) exps'
     return ()

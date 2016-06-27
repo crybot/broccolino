@@ -17,7 +17,7 @@ data ExpAst = ExpNode Operation ExpAst ExpAst | ValNode Int | IdeNode Ide | Empt
 - ComL -> Com ComLF
 - ComLF -> ; ComL | epsilon
 - Dec -> int ide | int ide = Expr
-- Com -> ide = Expr | if Expr then ComL else ComL
+- Com -> ide = Expr | if Expr then ComL else ComL end
 - Expr -> TermExpr'
 - Expr' -> +TermExpr' | -TermExpr' | epsilon
 - Term -> FactTerm'
@@ -72,29 +72,34 @@ parseComL all@(Ide x : tokens) = (ast', tokens'')
           (ast', tokens'') = parseComLF tokens' ast
 
 parseComL all@(If : tokens) = (ast', tokens'')
-    where (IfCom exp com1 com2, tokens') = parseCom all
-          (ast', tokens'') = parseComLF tokens' (IfCom exp com1 com2)
+    where (ast, tokens') = parseCom all
+          (ast', tokens'') = parseComLF tokens' ast
 
 parseComLF :: [Token] -> Com -> (Statement, [Token])
 parseComLF (SemiColon : tokens) ast = (ComList (ast : ast'), tokens')
     where (ComList ast', tokens') = parseComL tokens
 
-parseComLF all@(Else:tokens) ast = (ComList [ast], all)
-parseComLF [] ast = (ComList [ast], [])
-parseComLF tokens _ = error "parsing error on ComLF" 
+parseComLF tokens ast = case tokens of
+                             Else : _ -> (ComList [ast], tokens)
+                             End : _ -> (ComList [ast], tokens)
+                             [] -> (ComList [ast], tokens)
+                             _ -> error $ "parsing error on ComLF " ++ show tokens 
 
 parseCom :: [Token] -> (Com, [Token])
 parseCom (Ide x : Equals : expression) = (Com x exp, tokens)
     where (exp, tokens) = parseExpr expression
 
-parseCom (If : expression ) = (IfCom exp com1 com2, tokens'')
+parseCom (If : expression ) = case tokens'' of
+                                   End : rest -> (IfCom exp com1 com2, rest)
+                                   _ -> error "parsing error: missing 'end' clause inside if-statement"
     where (exp, tokens) = parseExpr expression
           (ComList com1, tokens') = case tokens of
-                                Then : rest -> parseComL rest
-                                _ -> error "parsing error: missing 'then' clause inside if-statement"
+                                         Then : rest -> parseComL rest
+                                         _ -> error "parsing error: missing 'then' clause inside if-statement"
+
           (ComList com2, tokens'') = case tokens' of
-                                  Else : rest -> parseComL rest
-                                  _ -> error "parsing error: missing 'else' clause inside if-statement"
+                                          Else : rest -> parseComL rest
+                                          _ -> error "parsing error: missing 'else' clause inside if-statement"
 
 parseExpr :: [Token] -> (ExpAst, [Token])
 parseExpr tokens = (ast', tokens'')
@@ -114,6 +119,7 @@ parseExpr' (t : tokens) ast = case t of
                                    If -> (ast, t:tokens)
                                    Then -> (ast, t:tokens)
                                    Else -> (ast, t:tokens)
+                                   End -> (ast, t:tokens)
                                    And -> (ast, t:tokens)
                                    _ -> error "parsing error on Expr'"
 parseExpr' [] ast = (ast, [])
@@ -137,6 +143,7 @@ parseTerm' (t : tokens) ast = case t of
                                    If -> (ast, t:tokens)
                                    Then -> (ast, t:tokens)
                                    Else -> (ast, t:tokens)
+                                   End -> (ast, t:tokens)
                                    And -> (ast, t:tokens)
                                    RParen -> (ast, t:tokens)
                                    _ -> error "parsing error on Term'"

@@ -17,6 +17,7 @@ data Token =
            If |
            Then |
            Else |
+           End |
            Int |
            EOF |
            Other
@@ -25,7 +26,7 @@ data Token =
 data Operation = Plus | Minus | Times | Divide 
                deriving (Show, Eq)
 
-reservedWords = ["int", "and", "if", "then", "else"] :: [String]
+reservedWords = ["int", "and", "if", "then", "else", "end"] :: [String]
 
 mapReserved :: String -> Token
 mapReserved w = case w of
@@ -34,6 +35,7 @@ mapReserved w = case w of
                      "if" -> If
                      "then" -> Then
                      "else" -> Else
+                     "end" -> End
 
 mapOperator :: Char -> Operation
 mapOperator '+' = Plus
@@ -53,9 +55,13 @@ isBinOp = (`elem` ['+', '-', '*', '/'])
 isUnderscore :: Char -> Bool
 isUnderscore x = x == '_'
 
+-- purposely discard EOF token to simplify parsing 
 tokenize :: String -> [Token]
 tokenize [] = []
-tokenize s = tok : tokenize consumed
+tokenize s =
+    case tok of 
+         EOF -> []
+         _ -> tok : tokenize consumed
     where (tok, consumed) = nextToken s
 
 nextToken :: String -> (Token, String)

@@ -3,7 +3,7 @@ import Lexer
 
 data Statement = Exp ExpAst | DecList [Dec] | ComList [Com] deriving (Show, Eq)
 data Dec = Dec Ide | Init Ide ExpAst deriving (Show, Eq)
-data Com = Com Ide ExpAst | IfCom ExpAst [Com] [Com] deriving (Show, Eq)
+data Com = Com Ide ExpAst | IfCom ExpAst [Com] [Com] | WhileCom ExpAst [Com] deriving (Show, Eq)
 data ExpAst = ExpNode Operation ExpAst ExpAst | ValNode Int | IdeNode Ide | Empty deriving (Show,Eq)
 
 -- GRAMMAR --
@@ -17,7 +17,8 @@ data ExpAst = ExpNode Operation ExpAst ExpAst | ValNode Int | IdeNode Ide | Empt
 - ComL -> Com ComLF
 - ComLF -> ; ComL | epsilon
 - Dec -> int ide | int ide = Expr
-- Com -> ide = Expr | if Expr then ComL else ComL end
+- Com -> ide = Expr | if Expr then ComL else ComL end 
+         | while Expr do ComL end
 - Expr -> TermExpr'
 - Expr' -> +TermExpr' | -TermExpr' | epsilon
 - Term -> FactTerm'
@@ -43,6 +44,9 @@ parse all@(Ide x : tokens) = check rest ast
     where (ast, rest) = parseComL all
 
 parse all@(If : tokens) = check rest ast
+    where (ast, rest) = parseComL all
+
+parse all@(While : tokens) = check rest ast
     where (ast, rest) = parseComL all
 
 parse tokens = check rest (Exp ast)
@@ -75,6 +79,10 @@ parseComL all@(If : tokens) = (ast', tokens'')
     where (ast, tokens') = parseCom all
           (ast', tokens'') = parseComLF tokens' ast
 
+parseComL all@(While : tokens) = (ast', tokens'')
+    where (ast, tokens') = parseCom all
+          (ast', tokens'') = parseComLF tokens' ast
+
 parseComLF :: [Token] -> Com -> (Statement, [Token])
 parseComLF (SemiColon : tokens) ast = (ComList (ast : ast'), tokens')
     where (ComList ast', tokens') = parseComL tokens
@@ -101,6 +109,14 @@ parseCom (If : expression ) = case tokens'' of
                                           Else : rest -> parseComL rest
                                           _ -> error "parsing error: missing 'else' clause inside if-statement"
 
+
+parseCom (While : expression) = case tokens' of
+                                     End : rest -> (WhileCom exp com, rest)
+    where (exp, tokens) = parseExpr expression
+          (ComList com, tokens') = case tokens of
+                                        Do : rest -> parseComL rest
+                                        _ -> error "parsing error: missing 'do' clause inside while-statement"
+
 parseExpr :: [Token] -> (ExpAst, [Token])
 parseExpr tokens = (ast', tokens'')
     where (ast, tokens')  = parseTerm tokens
@@ -121,6 +137,7 @@ parseExpr' (t : tokens) ast = case t of
                                    Else -> (ast, t:tokens)
                                    End -> (ast, t:tokens)
                                    And -> (ast, t:tokens)
+                                   Do -> (ast, t:tokens)
                                    _ -> error "parsing error on Expr'"
 parseExpr' [] ast = (ast, [])
 
@@ -145,6 +162,7 @@ parseTerm' (t : tokens) ast = case t of
                                    Else -> (ast, t:tokens)
                                    End -> (ast, t:tokens)
                                    And -> (ast, t:tokens)
+                                   Do -> (ast, t:tokens)
                                    RParen -> (ast, t:tokens)
                                    _ -> error "parsing error on Term'"
 

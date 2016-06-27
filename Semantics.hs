@@ -101,6 +101,12 @@ semCom (IfCom exp com1 com2) env mem
     | otherwise = semComL (ComList com2) env mem
     where ValN condition = semExp exp env mem
 
+semCom all@(WhileCom exp com) env mem
+    | condition /= 0 = semCom all env mem'
+    | otherwise = mem
+    where ValN condition = semExp exp env mem
+          mem' = semComL (ComList com) env mem
+
 semComL :: Statement -> Env -> Mem -> Mem
 semComL (ComList (x:xs)) env mem = mem''
     where mem' = semCom x env mem
@@ -123,7 +129,6 @@ interpretDec (Init x exp) env mem =
           Value val = searchStack mem' loc
           Value loc = searchStack env' x
 
-
 interpretCom :: Com -> Env -> Mem -> IO Mem
 interpretCom (Com id exp) env mem = do
     print $ "[" ++ id ++ " = " ++ show val ++ "]"
@@ -142,12 +147,17 @@ interpretCom (IfCom exp com1 com2) env mem
         return mem'
     where ValN condition = semExp exp env mem
 
+interpretCom all@(WhileCom exp com) env mem
+    | condition /= 0 = do
+        (_, mem') <- interpret (ComList com) env mem
+        interpretCom all env mem'
+    | otherwise = return mem
+    where ValN condition = semExp exp env mem
 
 interpret :: Statement -> Env -> Mem -> IO (Env, Mem)
 interpret (Exp exp) env mem = do
     print $ semExp exp env mem
     return (env, mem)
-
 
 interpret (DecList []) env mem  = return (env, mem)
 interpret (DecList (x:xs)) env mem = do
@@ -161,7 +171,7 @@ interpret (ComList (x:xs)) env mem = do
 
 main :: IO ()                                                                   
 main = do
-    exps <- init <$> splitOn "!" <$> getContents
+    exps <- init . splitOn "!" <$> getContents
     let exps' =  map (parse . tokenize) exps
     foldM_ (\(env,mem) x -> interpret x env mem) ([w],[w]) exps'
     return ()

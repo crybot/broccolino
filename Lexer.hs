@@ -18,6 +18,8 @@ data Token =
            Then |
            Else |
            End |
+           While | 
+           Do |
            Int |
            EOF |
            Other
@@ -26,7 +28,7 @@ data Token =
 data Operation = Plus | Minus | Times | Divide 
                deriving (Show, Eq)
 
-reservedWords = ["int", "and", "if", "then", "else", "end"] :: [String]
+reservedWords = ["int", "and", "if", "then", "else", "end", "while", "do"] :: [String]
 
 mapReserved :: String -> Token
 mapReserved w = case w of
@@ -36,6 +38,8 @@ mapReserved w = case w of
                      "then" -> Then
                      "else" -> Else
                      "end" -> End
+                     "while" -> While
+                     "do" -> Do
 
 mapOperator :: Char -> Operation
 mapOperator '+' = Plus

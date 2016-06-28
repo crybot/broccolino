@@ -4,7 +4,8 @@ import Lexer
 data Statement = Exp ExpAst | DecList [Dec] | ComList [Com] deriving (Show, Eq)
 data Dec = Dec Ide | Init Ide ExpAst deriving (Show, Eq)
 data Com = Com Ide ExpAst | IfCom ExpAst [Com] [Com] | WhileCom ExpAst [Com] deriving (Show, Eq)
-data ExpAst = ExpNode Operation ExpAst ExpAst | ValNode Int | IdeNode Ide | Empty deriving (Show,Eq)
+data ExpAst = ExpNode Operation ExpAst ExpAst | ValNode Int | IdeNode Ide
+            | Negative ExpAst | Empty deriving (Show,Eq)
 
 -- GRAMMAR --
 -- post-fix F stands for "left Factored"
@@ -19,11 +20,11 @@ data ExpAst = ExpNode Operation ExpAst ExpAst | ValNode Int | IdeNode Ide | Empt
 - Dec -> int ide | int ide = Expr
 - Com -> ide = Expr | if Expr then ComL else ComL end 
          | while Expr do ComL end
-- Expr -> TermExpr'
+- Expr -> TermExpr' | -TermExpr'
 - Expr' -> +TermExpr' | -TermExpr' | epsilon
 - Term -> FactTerm'
 - Term' -> *FactTerm' | /FactTerm' | epsilon
-- Fact -> num | ide | (Exp)
+- Fact -> num | ide | (Expr)
 -}
          
 check :: [Token] -> a -> a
@@ -118,6 +119,10 @@ parseCom (While : expression) = case tokens' of
                                         _ -> error "parsing error: missing 'do' clause inside while-statement"
 
 parseExpr :: [Token] -> (ExpAst, [Token])
+parseExpr (BinOp Minus : tokens) = (ast', tokens'')
+    where (ast, tokens') = parseTerm tokens
+          (ast', tokens'') = parseExpr' tokens' (Negative ast)
+
 parseExpr tokens = (ast', tokens'')
     where (ast, tokens')  = parseTerm tokens
           (ast', tokens'') = parseExpr' tokens' ast

@@ -72,6 +72,9 @@ semExp (ExpNode op e1 e2) env mem = o v1 v2
           v2 = semExp e2 env mem
           o = semBop op
 
+semExp (Negative exp) env mem = ValN (-val)
+    where ValN val = semExp exp env mem
+
 semDec :: Dec -> Env -> Mem -> (Env, Mem)
 semDec (Init id exp) env mem = (env', mem')
     where 

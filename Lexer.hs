@@ -53,8 +53,8 @@ isReserved = (`elem` reservedWords)
 isParen :: Char -> Bool
 isParen = (`elem` ['(', ')'])
 
-isBinOp :: Char -> Bool
-isBinOp = (`elem` ['+', '-', '*', '/'])
+isOp :: Char -> Bool
+isOp = (`elem` ['+', '-', '*', '/'])
 
 isUnderscore :: Char -> Bool
 isUnderscore x = x == '_'
@@ -72,7 +72,7 @@ nextToken :: String -> (Token, String)
 nextToken [] = (EOF, []) -- Should not ever verify -- 
 nextToken (x:xs) 
     | isSpace x = nextToken xs
-    | isBinOp x = (BinOp (mapOperator x), xs)
+    | isOp x = (BinOp (mapOperator x), xs)
     | x == '(' = (LParen, xs)
     | x == ')' = (RParen, xs)
     | x == '=' = (Equals, xs)

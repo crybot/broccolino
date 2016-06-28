@@ -113,6 +113,7 @@ parseCom (If : expression ) = case tokens'' of
 
 parseCom (While : expression) = case tokens' of
                                      End : rest -> (WhileCom exp com, rest)
+                                     _ -> error "parsing error: missing 'end' clause inside while-statement"
     where (exp, tokens) = parseExpr expression
           (ComList com, tokens') = case tokens of
                                         Do : rest -> parseComL rest

@@ -4,8 +4,10 @@ import Lexer
 data Statement = Exp ExpAst | DecList [Dec] | ComList [Com] deriving (Show, Eq)
 data Dec = Dec Ide | Init Ide ExpAst deriving (Show, Eq)
 data Com = Com Ide ExpAst | IfCom ExpAst [Com] [Com] | WhileCom ExpAst [Com] deriving (Show, Eq)
-data ExpAst = ExpNode Operation ExpAst ExpAst | ValNode Int | IdeNode Ide
+data ExpAst = ExpNode Operation ExpAst ExpAst | ValNode Type | IdeNode Ide
             | Negative ExpAst | Empty deriving (Show,Eq)
+
+data Type = BoolT Bool | IntT Int deriving (Show, Eq)
 
 -- GRAMMAR --
 -- post-fix F stands for "left Factored"
@@ -17,14 +19,16 @@ data ExpAst = ExpNode Operation ExpAst ExpAst | ValNode Int | IdeNode Ide
 - DecLF -> and DecL | epsilon
 - ComL -> Com ComLF
 - ComLF -> ; ComL | epsilon
-- Dec -> int ide | int ide = Expr
+- Dec -> Type ide | Type ide = Expr
+- Type -> int | bool
 - Com -> ide = Expr | if Expr then ComL else ComL end 
          | while Expr do ComL end
 - Expr -> TermExpr' | -TermExpr'
 - Expr' -> +TermExpr' | -TermExpr' | epsilon
 - Term -> FactTerm'
 - Term' -> *FactTerm' | /FactTerm' | epsilon
-- Fact -> num | ide | (Expr)
+- Fact -> num | Bool | ide | (Expr)
+- Bool -> True | False
 -}
          
 check :: [Token] -> a -> a
@@ -33,6 +37,9 @@ check (x:_) _ = error $ "parsing error: Unexpected token '" ++ show x ++ "'"
 
 parse :: [Token] -> Statement
 parse all@(Int:tokens) = check rest ast
+    where (ast, rest) = parseDecL all
+
+parse all@(Bool:tokens) = check rest ast
     where (ast, rest) = parseDecL all
 
 parse all@[Ide x] = check rest (Exp ast)
@@ -58,6 +65,10 @@ parseDecL all@(Int:tokens) = (ast', tokens'')
     where (ast, tokens') = parseDec all
           (ast', tokens'') = parseDecLF tokens' ast
 
+parseDecL all@(Bool:tokens) = (ast', tokens'')
+    where (ast, tokens') = parseDec all
+          (ast', tokens'') = parseDecLF tokens' ast
+
 parseDecLF :: [Token] -> Dec -> (Statement, [Token])
 parseDecLF (And : tokens) ast = (DecList (ast : ast'), tokens')
     where (DecList ast', tokens') = parseDecL tokens 
@@ -66,10 +77,12 @@ parseDecLF [] ast = (DecList [ast], [])
 parseDecLF _ _ = error "parsing error on DecLF"
 
 parseDec :: [Token] -> (Dec, [Token])
-parseDec (Int : Ide x : And : tokens) = (Dec x, And : tokens)
-parseDec [Int, Ide x] = (Dec x, [])
-parseDec (Int : Ide x : Equals : expression) = (Init x exp, tokens)
-    where (exp, tokens) = parseExpr expression
+parseDec (t:tokens) 
+    | t `elem` [Int, Bool] = case tokens of
+                                  Ide x : Equals : expression -> (Init x exp, tokens)
+                                      where (exp, tokens) = parseExpr expression
+                                  Ide x : tokens' -> (Dec x, tokens')
+    | otherwise = error "parsing error on parseDec"
 
 parseComL :: [Token] -> (Statement, [Token])
 parseComL all@(Ide x : tokens) = (ast', tokens'')
@@ -180,7 +193,8 @@ parseFactor (LParen : tokens) = case tokens' of
                                      _ -> error "parsing error: Missing closing parentheses"
     where (ast, tokens') = parseExpr tokens
 
-parseFactor (Num a : tokens) = (ValNode a, tokens)
+parseFactor (Num a : tokens) = (ValNode (IntT a), tokens)
+parseFactor (Boolean a : tokens) = (ValNode (BoolT a), tokens)
 parseFactor (Ide x : tokens) = (IdeNode x, tokens)
 parseFactor _ = error "parsing error on Factor"
 

@@ -8,7 +8,7 @@ data Bottom a = Bottom | Value a deriving (Show, Eq)
 type Frame a b = a -> Bottom b                                                  
 type Stack a b = [Frame a b]                                                    
 
-data Val = ValN Int | Unknown deriving (Show, Eq)
+data Val = ValN Int | ValB Bool | Unknown deriving (Show, Eq)
 type Loc = Int                                                                  
 
 type EnvFrame = Frame Ide Loc                                                   
@@ -61,7 +61,8 @@ semBop o = f
                    Divide -> div
 
 semExp :: ExpAst -> Env -> Mem -> Val
-semExp (ValNode n) env mem = ValN n
+semExp (ValNode (IntT n)) env mem = ValN n
+semExp (ValNode (BoolT n)) env mem = ValB n
 
 semExp (IdeNode id) env mem = v
     where Value loc = searchStack env id
@@ -142,20 +143,20 @@ interpretCom (Com id exp) env mem = do
         Value loc = searchStack env id
 
 interpretCom (IfCom exp com1 com2) env mem 
-    | condition /= 0 = do
+    | condition = do
         (_, mem') <- interpret (ComList com1) env mem
         return mem'
     | otherwise = do
         (_, mem') <- interpret (ComList com2) env mem
         return mem'
-    where ValN condition = semExp exp env mem
+    where ValB condition = semExp exp env mem
 
 interpretCom all@(WhileCom exp com) env mem
-    | condition /= 0 = do
+    | condition = do
         (_, mem') <- interpret (ComList com) env mem
         interpretCom all env mem'
     | otherwise = return mem
-    where ValN condition = semExp exp env mem
+    where ValB condition = semExp exp env mem
 
 interpret :: Statement -> Env -> Mem -> IO (Env, Mem)
 interpret (Exp exp) env mem = do

@@ -11,6 +11,7 @@ data Token =
            BinOp Operation | 
            Ide Ide |
            Num Int |
+           Boolean Bool |
            Equals | 
            And |
            SemiColon | 
@@ -20,6 +21,7 @@ data Token =
            End |
            While | 
            Do |
+           Bool |
            Int |
            EOF |
            Other
@@ -28,11 +30,12 @@ data Token =
 data Operation = Plus | Minus | Times | Divide 
                deriving (Show, Eq)
 
-reservedWords = ["int", "and", "if", "then", "else", "end", "while", "do"] :: [String]
+reservedWords = ["int", "bool", "and", "if", "then", "else", "end", "while", "do", "true", "false"] :: [String]
 
 mapReserved :: String -> Token
 mapReserved w = case w of
                      "int" -> Int
+                     "bool" -> Bool
                      "and" -> And
                      "if" -> If
                      "then" -> Then
@@ -40,6 +43,8 @@ mapReserved w = case w of
                      "end" -> End
                      "while" -> While
                      "do" -> Do
+                     "true" -> Boolean True
+                     "false" -> Boolean False
 
 mapOperator :: Char -> Operation
 mapOperator '+' = Plus
@@ -95,3 +100,10 @@ scanNum [] lexem = (Num lexem, [])
 scanNum all@(x:xs) lexem 
     | isDigit x = scanNum xs (lexem * 10 + digitToInt x)
     | otherwise = (Num lexem, all)
+
+
+
+
+
+
+
